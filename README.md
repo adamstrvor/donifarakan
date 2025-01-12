@@ -1,6 +1,6 @@
 ## Introduction
 
-**"Dɔnifarakan"** also known as *"Dɔni fara ɲɔgɔn kan"* is a robust federated learning framework designed to enable distributed machine/deep learning while safeguarding data privacy. This framework enable multiple clients to collaboratively train sophisticated models without exposing their raw data. Instead, clients share model updates (e.g., weights) with a central server. The server aggregates these updates to create a generalized and high-performing model.
+**"Dɔnifarakan"** is a robust federated learning framework designed to enable distributed machine/deep learning while safeguarding data privacy. This framework enable multiple clients to collaboratively train sophisticated models without exposing their raw data. Instead, clients share model updates (e.g., weights) with a central server. The server aggregates these updates to create a generalized and high-performing model.
 
 Specifically tailored for the finance sector (banks, fintech companies, etc.), Dɔnifarakan allows stakeholders to train models on their local data without compromising sensitive information. This collaborative approach facilitates a wide range of applications, including:
 
@@ -13,7 +13,7 @@ Specifically tailored for the finance sector (banks, fintech companies, etc.), D
 
 ## Requirements
 
-Before to start you need to have **python** installed on your laptop. If you don't have python please follow the steps on the their [website](https://www.python.org/downloads) in order to get it.
+Before to start you need to have **python** installed on your laptop. If you don't have python please follow the steps on their [website](https://www.python.org/downloads) in order to get it.
 
 ## Getting started
 
