@@ -17,7 +17,7 @@ Before to start you need to have **python** installed on your laptop. If you don
 
 ## Getting started
 
-As we are in the context of federated learning, you should have at least two computer. One being the central server and another one being a sample client. You can many clients and as many as you can. Make sure that the computers including central and clients are all on the same local network.
+As we are in the context of federated learning, you should have at least two computers. One representing the central server and another one representing a sample client. You can many clients and as many as you can. Make sure that the computers including central and clients are all on the same local network.
 
 **On your central server computer**
 
@@ -25,6 +25,7 @@ As we are in the context of federated learning, you should have at least two com
 2. Go the folder directory in your terminal or cmd. _$cd "MyFramework"_
 3. Install the donifarakan framework. `$ pip install donifarakan`
 4. Create a python file which will be used to launch your central server. `$ touch server.py`
+5. Open the _server.py_ file then copy and paste this code below:
 
 ```
 # Here we are loading the required methods from donifrakan
@@ -41,7 +42,7 @@ start(ip_address="10.12.167.82",port=6590)
 2. Go the folder directory in your terminal or cmd. _$cd "MyCompany AI"_
 3. Install the donifarakan framework. `pip install donifarakan`
 4. Create a python file which will be used to train a model on the client local data. `$touch train.py`
-5. Open the _train.py_ file and write thid code below:
+5. Open the _train.py_ file then copy and paste this code below:
 
 ```
 # Here we are loading the required methods from donifrakan
