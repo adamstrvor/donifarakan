@@ -1,0 +1,14 @@
+fastapi
+Flask
+uvicorn
+pydantic
+scikit-learn
+pandas
+numpy
+matplotlib
+tensorflow
+termcolor
+openpyxl
+nltk
+requests
+kagglehub

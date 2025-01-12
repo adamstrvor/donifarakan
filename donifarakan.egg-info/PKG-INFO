@@ -1,0 +1,47 @@
+Metadata-Version: 2.1
+Name: donifarakan
+Version: 0.0.7
+Summary: Donifarakan is a federated learning framework designed specially for the finance sector (banks, fintech companies, etc.), where the stakeholders will train a generalized model on their local data without sharing them in order to make predictions, prevent market risks, assess news impacts on the stock market, and more.  
+Home-page: https://github.com/adamstrvor/donifaranga
+Author: Adama Seydou Traore
+Author-email: adamaseydoutraore86@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: fastapi
+Requires-Dist: Flask
+Requires-Dist: uvicorn
+Requires-Dist: pydantic
+Requires-Dist: scikit-learn
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+Requires-Dist: tensorflow
+Requires-Dist: termcolor
+Requires-Dist: openpyxl
+Requires-Dist: nltk
+Requires-Dist: requests
+Requires-Dist: kagglehub
+
+# Introduction
+
+Dɔni farakan also known as "Dɔni fara ɲɔgɔn kan" (in Bambara) is a powerful package designed in the frame of Federated Learning to facilitate distributed machine learning while preserving data privacy. This framework enables multiple clients to collaboratively train machine learning models without sharing their raw data.
+
+The documentation will be provided shortly!
+
+# Intallation instructions
+
+
+# Getting started
+
+
+# Requirements
+
+# Contribution
+
+
+# FAQ
+
+# License
