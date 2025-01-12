@@ -17,14 +17,14 @@ Before to start you need to have **python** installed on your laptop. If you don
 
 ## Getting started
 
-As we are in the context of federated learning, you should have at least two computer. One being the central server and another one being a sample client. You can many clients and as many as you can.
+As we are in the context of federated learning, you should have at least two computer. One being the central server and another one being a sample client. You can many clients and as many as you can. Make sure that the computers including central and clients are all on the same local network.
 
 **On your central server computer**
 
 1. Create a new folder for your project. You can name it " MyFramework "
 2. Go the folder directory in your terminal or cmd. _$cd "MyFramework"_
-3. Install the donifarakan framework. `pip install donifarakan`
-4. Create a python file which will be used to launch your central server. `$touch server.py`
+3. Install the donifarakan framework. `$ pip install donifarakan`
+4. Create a python file which will be used to launch your central server. `$ touch server.py`
 
 ```
 # Here we are loading the required methods from donifrakan
