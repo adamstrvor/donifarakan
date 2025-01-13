@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: donifarakan
-Version: 0.0.9
+Version: 0.1.0
 Summary: Donifarakan is a federated learning framework designed specially for the finance sector (banks, fintech companies, etc.), where the stakeholders will train a generalized model on their local data without sharing them in order to make predictions, prevent market risks, assess news impacts on the stock market, and more.  
 Home-page: https://github.com/adamstrvor/donifarakan
 Author: Adama Seydou Traore
@@ -27,7 +27,7 @@ Requires-Dist: kagglehub
 
 ## Introduction
 
-**"Dɔnifarakan"** also known as *"Dɔni fara ɲɔgɔn kan"* is a robust federated learning framework designed to enable distributed machine/deep learning while safeguarding data privacy. This framework enable multiple clients to collaboratively train sophisticated models without exposing their raw data. Instead, clients share model updates (e.g., weights) with a central server. The server aggregates these updates to create a generalized and high-performing model.
+**"Dɔni farakan"** is a robust federated learning framework designed to enable distributed machine/deep learning while safeguarding data privacy. This framework enable multiple clients to collaboratively train sophisticated models without exposing their raw data. Instead, clients share model updates (e.g., weights) with a central server. The server aggregates these updates to create a generalized and high-performing model.
 
 Specifically tailored for the finance sector (banks, fintech companies, etc.), Dɔnifarakan allows stakeholders to train models on their local data without compromising sensitive information. This collaborative approach facilitates a wide range of applications, including:
 
@@ -40,11 +40,11 @@ Specifically tailored for the finance sector (banks, fintech companies, etc.), D
 
 ## Requirements
 
-Before to start you need to have **python** installed on your laptop. If you don't have python please follow the steps on the their [website](https://www.python.org/downloads) in order to get it.
+Before to start you need to have **python** installed on your laptop. If you don't have python please follow the steps on their [website](https://www.python.org/downloads) in order to get it.
 
 ## Getting started
 
-As we are in the context of federated learning, you should have at least two computer. One being the central server and another one being a sample client. You can many clients and as many as you can. Make sure that the computers including central and clients are all on the same local network.
+As we are in the context of federated learning, you should have at least two computers. One representing the central server and another one representing a sample client. You can many clients and as many as you can. Make sure that the computers including central and clients are all on the same local network.
 
 **On your central server computer**
 
@@ -100,22 +100,3 @@ For any query you can reach me out at ___adamaseydoutraore86@gmail.com___
 MIT License
 
 **Copyright (c) 2025 TRAORE ADAMA SEYDOU**
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
