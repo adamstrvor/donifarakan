@@ -12,3 +12,6 @@ openpyxl
 nltk
 requests
 kagglehub
+shap
+lime
+seaborn

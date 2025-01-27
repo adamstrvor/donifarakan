@@ -4,6 +4,32 @@ import os
 import sys
 import shutil
 from  termcolor import colored
+import string
+import re
+import sys
+from collections import Counter, defaultdict
+import math
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.neural_network import MLPRegressor
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.models import load_model
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+from nltk import pos_tag
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+
+agg_methods = {'1':"Federated Averaging (FedAvg)", '2':"Federated Matched Averaging (FedMA)", '3':"All Model Averaging (AMA)", '4': "One Model Selection (OMS)", '5':"Best Models Averaging (BMA)", '6': "FedProx", '7': "Hybrid Approaches"}
+models = {'1': 'Linear Regression', '2': 'Logistic Regression', '3': 'Mutli-Layer Perceptron (MLP)', '4': 'Long-Short Term Memory (LSTM)'}
+all_models = { '1': LinearRegression(), '2': LogisticRegression(random_state=16) ,'3': MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500), '4': Sequential() }
+regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide'}
+cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Foreign Currency Exchange'}
+
+# nltk.download('stopwords')
 
 def load_dataset(file_path):
     # Get the file extension
@@ -58,12 +84,15 @@ def download_dataset(default_path="/home/donifaranga/datasets"):
 
     print('|> Specify the type or categorie of the dataset (stock price data, feedback data,...):')
     print('\n\t|>> ',end="")
-    cat = input("").strip()
-    cat = cat if cat != "" else "default"
-    cat = cat.replace(" ", "-")
-    print(colored(f"\t|>> {cat}\n",'blue'))
+    print('--')
+    for index,name in cats.items():
+        print('\t',index,". "+name)
+    print('\n\t|>> ',end="")
+    cat_index = input("").strip()
+    cat = cats[cat_index] if cat_index in cats.keys() else "General"
+    print(colored(f"\t|>> {cat}\n", 'blue'))
 
-    source_dataset = os.path.join(dataset_path,cat)
+    source_dataset = os.path.join(dataset_path,cat.replace(" ", "-").lower())
 
     if not os.path.exists(source_dataset):
         os.makedirs(source_dataset)
@@ -93,5 +122,329 @@ def download_dataset(default_path="/home/donifaranga/datasets"):
 
     print('\n---------------[END]\n')
 
+def show_performances():
+
+    print("-------------------------------------------------------------")
+    print(" FL-FRAMEWORK MODELS PERFORMANCES")
+    print("-------------------------------------------------------------")
+
+
+    print('|> Please specify the type or categorie of the dataset to use (stock price data, feedback data,...):')
+    print('\n\t|>> ',end="")
+    print('--')
+    for index,name in cats.items():
+        print('\t',index,". "+name)
+    print('\n\t|>> ',end="")
+    cat_index = input("").strip()
+    cat_index = cat_index if cat_index in cats.keys() else "1"
+    print(colored(f"\t|>> {cats[cat_index]}\n", 'blue'))
+
+
+    print('|> Please specify the region on which the dataset is based on:')
+    print('\n\t|>> ',end="")
+    print('--')
+    for index,name in regions.items():
+        print('\t',index,". "+name)
+    print('\n\t|>> ',end="")
+    region_index = input("").strip()
+    region_index = region_index if region_index in regions.keys() else "1"
+    print(colored(f"\t|>> {regions[region_index]}\n", 'blue'))
+
+    print('|> Select the model for training:')
+    print('\n\t|>> ',end="")
+    print('--')
+    for index,name in models.items():
+        print('\t',index,". "+name)
+    print('\n\t|>> ',end="")
+    model_index = input("").strip()
+    model_index = model_index if model_index in models.keys() else "1"
+    print(colored(f"\t|>> {models[model_index]}\n", 'blue'))
+
+    print('|> Select the federated learning aggregate method:')
+    print('\n\t|>> ',end="")
+    print('--')
+    for index,name in agg_methods.items():
+        print('\t',index,". "+name)
+    print('\n\t|>> ',end="")
+    agg_index = input("").strip()
+    agg_index = agg_index if agg_index in agg_methods.keys() else "1"
+    print(colored(f"\t|>> {agg_methods[agg_index]}\n", 'blue'))
+
+
+
+    df = pd.read_csv('models_performances.csv')
+
+    print(df)
+
+
+    filtered_data = df[df['model'] == model_index]
+
+    print("|> Performances:")
+    print(filtered_data)
+
+    # Step 3: Plotting the accuracy and error
+    plt.figure(figsize=(12, 6))
+
+    # Plot Accuracy
+    plt.subplot(1, 2, 1)
+    sns.barplot(data=filtered_data, x='client', y='accuracy', palette='viridis')
+    plt.title(f'Accuracy of Clients for {models[model_index]} using {agg_methods[agg_index]}')
+    plt.xlabel('Client ID')
+    plt.ylabel('Accuracy')
+
+    # Plot Error
+    plt.subplot(1, 2, 2)
+    sns.barplot(data=filtered_data, x='client', y='error', palette='viridis')
+    plt.title(f'Error of Clients for {models[model_index]} using {agg_methods[agg_index]}')
+    plt.xlabel('Client ID')
+    plt.ylabel('Error')
+
+    plt.tight_layout()
+    plt.show()
+
+    print()
+
+
+
+def cosine_similarity(vector_a, vector_b):
+    dot_product = np.dot(vector_a, vector_b)
+    norm_a = np.linalg.norm(vector_a)
+    norm_b = np.linalg.norm(vector_b)
+    similarity = dot_product / (norm_a * norm_b)
+    return similarity
+
+def cosine_similarities(vector_a,vectors):
+    similarities = []
+    for vector in vectors:
+        similarities.append(cosine_similarity(vector_a,vector))
+    return similarities
+
+
+def clean_text(text:str, tokens=[], lowercase=True, no_stopwords=True, no_digits=True, no_urls=True, no_puncts=True):
+
+    if lowercase:
+        text = text.lower()
+
+    if no_urls:
+        text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9][$-_@.&+]|[!*\\(\\),]|(?:[$-_@.&+])|(?:%[0-9a-fA-F][0-9a-fA-F]))+','',text)
+
+    if no_puncts:
+        translator = str.maketrans('','',string.punctuation)
+        text = text.translate(translator)
+
+    if no_digits:
+        text = re.sub(r'\d+','',text)
+
+    for t in tokens:
+        text = re.sub(r'\b' + re.escape(t) + r'\b', '', text)
+
+    if no_stopwords:
+        stop_words = set(stopwords.words('english')) 
+        text = " ".join( [word for word in text.split() if word not in stop_words] )
+
+    return text
+
+def generate_reverse_tfidf(texts, method='sublinear'):
+    vocab = set()
+    doc_size = len(texts)
+    tf = []
+    idf = {}
+    tf_idf = []
+    tf_idf_array = []
+
+    # Getting the vocab
+    # ------------------
+
+    for text in texts:
+        text = clean_text(text)
+        words = []
+        for word in text.split():
+            vocab.add(word)
+            if word not in words:
+                idf[word] = idf.get(word,0) + 1
+            words.append(word)
+
+    vocab = sorted(vocab)
+
+    # Getting the TF
+    # ------------------
+
+    for text in texts:
+        text = clean_text(text)
+        tf_value = {}
+        for word in vocab:
+            tf_value[word] = 0
+        size = len(text)
+        _tf = Counter(text.split())
+        for word ,value in _tf.items():
+            tf_value[word] = value / size
+        tf.append(tf_value)
+
+
+    # Getting the IDF
+    # ------------------
+
+    for word in vocab:
+        if method == 'smoothing':
+            idf[word] = 1 + math.log( doc_size / (idf[word] +1 ) )
+        elif method == 'maxidf':
+            idf[word] = min( max(idf), math.log( doc_size / (idf[word] +1 ) ) )
+        else:
+            idf[word] = 1 + math.log( doc_size / idf[word] )
+
+
+    # Combining the TF with the IDF
+    # ------------------
+
+    for i,t in enumerate(tf):
+        result = {}
+        for word,value in t.items():
+            result[word] = value * idf[word]
+        tf_idf.append(result)
+
+
+    for i,t in enumerate(tf):
+        result = []
+        for word,value in t.items():
+            result.append( value * idf[word] )
+        tf_idf_array.append(result)
+
+
+
+    return tf_idf_array
+
+
+def generate_tfidf(texts, method='sublinear'):
+    vocab = set()
+    doc_size = len(texts)
+    tf = {}
+    idf = {}
+    tf_idf = {}
+    tf_idf_array = []
+
+    # Getting the vocab
+    # ------------------
+
+    for text in texts:
+        text = clean_text(text)
+        words = []
+        for word in text.split():
+            vocab.add(word)
+            tf[word] = [0] * doc_size
+            tf_idf[word] = [0] * doc_size
+            if word not in words:
+                idf[word] = idf.get(word,0) + 1
+            words.append(word)
+
+    vocab = sorted(vocab)
+    tf = sorted(tf)
+    idf = sorted(idf)
+
+    # Getting the TF
+    # ------------------
+
+    for i,text in enumerate(texts):
+        text = clean_text(text)
+        size = len(text)
+        _tf = Counter(text.split())
+        for word ,value in _tf.items():
+            tf[word][i] = (tf[word][i] + 1) / size
+
+
+    # Getting the IDF
+    # ------------------
+
+    for word in vocab:
+        if method == 'smoothing':
+            idf[word] = 1 + math.log( doc_size / (idf[word] +1 ) )
+        elif method == 'maxidf':
+            idf[word] = min( max(idf), math.log( doc_size / (idf[word] +1 ) ) )
+        else:
+            idf[word] = 1 + math.log( doc_size / idf[word] )
+
+
+    # Combining the TF with the IDF
+    # ------------------
+
+    for i,text in enumerate(texts):
+        for word ,value in tf.items():
+            tf_idf[word][i] = tf[word][i] * idf[word]
+
+    for key,value in tf_idf.items():
+        tf_idf_array.append(value)
+        
+
+
+    return tf_idf_array
+
+
+def generate_bow(texts):
+    vocab = set()
+    doc_size = len(texts)
+    bow = {}
+    bow_array = []
+
+    # Getting the vocab
+    # ------------------
+
+    for text in texts:
+        text = clean_text(text)
+        for word in text.split():
+            vocab.add(word)
+            bow[word] = [0] * doc_size
+
+    vocab = sorted(vocab)
+
+    for i,text in enumerate(texts):
+        text = clean_text(text)
+        size = len(text)
+        _tf = Counter(text.split())
+        for word ,value in _tf.items():
+            bow[word][i] = (bow[word][i] + 1) 
+
+    for key,value in bow.items():
+        bow_array.append(value)
+
+    return bow_array
+
+
+def generate_ngram(texts, n=2):
+    vocab = set()
+    doc_size = len(texts)
+
+    ngram = {}
+
+    # Getting the vocab
+    # ------------------
+
+    for text in texts:
+        text = clean_text(text)
+        words = text.split()
+        for word in words:
+            vocab.add(word)
+
+        for i in range(len(words) - n + 1):
+            
+            context = tuple(words[i:i+n-1]) 
+            next_word = words[i+n-1]
+            if context not in ngram:
+              ngram[context] = {}
+            if next_word not in ngram[context]:
+              ngram[context][next_word] = 0
+            ngram[context][next_word] += 1
+
+
+    return ngram
+
+def one_hot_encode(data):
+    encoded_data = []
+    unique_values = list(set(data))
+    for value in data:
+        one_hot_vector = [0] * len(unique_values)
+        index = unique_values.index(value)
+        one_hot_vector[index] = 1
+        encoded_data.append(one_hot_vector)
+
+    return encoded_data
 
 
