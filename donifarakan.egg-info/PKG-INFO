@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: donifarakan
-Version: 0.1.0
+Version: 0.1.1
 Summary: Donifarakan is a federated learning framework designed specially for the finance sector (banks, fintech companies, etc.), where the stakeholders will train a generalized model on their local data without sharing them in order to make predictions, prevent market risks, assess news impacts on the stock market, and more.  
 Home-page: https://github.com/adamstrvor/donifarakan
 Author: Adama Seydou Traore
@@ -24,6 +24,9 @@ Requires-Dist: openpyxl
 Requires-Dist: nltk
 Requires-Dist: requests
 Requires-Dist: kagglehub
+Requires-Dist: shap
+Requires-Dist: lime
+Requires-Dist: seaborn
 
 ## Introduction
 

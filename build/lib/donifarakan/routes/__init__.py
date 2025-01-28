@@ -9,7 +9,7 @@ import sys
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler 
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.neural_network import MLPRegressor
 from tensorflow.keras.models import Sequential
@@ -43,7 +43,7 @@ def get_model():
 
         cat = request.form.get('cat')
 
-        source_models = os.path.join(source_models,cat)
+        source_models = os.path.join(source_models, cat.replace(" ", "-").lower())
         # print(source_models,'\n')
 
         if not os.path.exists(source_models):
@@ -69,18 +69,19 @@ def receive_parameters():
         source_dir = os.path.dirname(os.path.dirname(__file__))
         source_dataset = os.path.join(source_dir,'datasets')
         source_models = os.path.join(source_dir,'models')
-        clients_models = os.path.join(source_models,'clients')
+        clients_models = os.path.join(source_dir,'clients')
 
-        cats = {'1':'price','2':'news','3':'risk'}
         agg_methods = {'1':"Federated Averaging (FedAvg)", '2':"Federated Matched Averaging (FedMA)", '3':"All Model Averaging (AMA)", '4': "One Model Selection (OMS)", '5':"Best Models Averaging (BMA)", '6': "FedProx", '7': "Hybrid Approaches"}
-        all_models = { '1': LinearRegression(), '2': MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500), '3': Sequential() }
-        all_models_name = {'1': 'Linear Regression Model', '2': 'Mutli-Layer Perceptron (MLP)', '3': 'Long-Short Term Memory (LSTM)'}
-        regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia'}
+        all_models_name = {'1': 'Linear Regression', '2': 'Logistic Regression', '3': 'Mutli-Layer Perceptron (MLP)', '4': 'Long-Short Term Memory (LSTM)'}
+        all_models = { '1': LinearRegression(), '2': LogisticRegression(random_state=16) ,'3': MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500), '4': Sequential() }
+        regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide'}
+        cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Foreign Currency Exchange'}
 
         model_file = request.files.get('model')
         agg_index = request.form.get('agg')
         model_index = request.form.get('model_type')
-        cat = request.form.get('cat')
+        cat_index = request.form.get('cat')
+        cat = cats[cat_index]
         client_id = request.form.get('id')
         model_filename = request.form.get('filename')
         region_index = request.form.get('region_index')
@@ -88,9 +89,9 @@ def receive_parameters():
         error = request.form.get('error')
 
         # print(source_models,'\n')
-        source_models = os.path.join(source_models,cat)
+        source_models = os.path.join(source_models,cat.replace(" ", "-").lower(),all_models_name[model_index].replace(" ","-").lower())
         # print(source_models,'\n')
-        clients_models = os.path.join(clients_models,cat)
+        clients_models = os.path.join(clients_models,cat.replace(" ", "-").lower(),all_models_name[model_index].replace(" ","-").lower())
         # print(clients_models,'\n')
 
         if not os.path.exists(source_models):
@@ -100,10 +101,36 @@ def receive_parameters():
             os.makedirs(clients_models)
 
         all_client_models = []
+        all_client_models_name = []
         accuracies = []
-        for file in os.listdir(clients_models):
-                file_path = os.path.join(clients_models, file)
-                if file.startswith('.') == False and os.path.isfile(file_path):
+                    
+        if model_file:
+
+            client_model_path = os.path.join(clients_models, client_id+'-'+model_filename)
+            model_file.save(client_model_path)
+            print(client_model_path)
+
+            performance_columns = ['client','model','categorie','aggregation','region','accuracy','error','filename']
+            new_record = {'client': client_id, 'model': model_index, 'categorie': cat_index, 'aggregation': agg_index, 'region': region_index, 'accuracy': accuracy, 'error': error, 'filename': client_model_path}
+            new_row_df = pd.DataFrame([new_record],columns=performance_columns)
+
+            if os.path.exists('models_performances.csv'):
+                df = pd.read_csv('models_performances.csv')
+                df = pd.concat([df, new_row_df], ignore_index=True)
+            else:
+                df = new_row_df #pd.DataFrame(columns=performance_columns)
+
+
+            df.to_csv('models_performances.csv', index=False)
+
+            df = pd.read_csv('models_performances.csv')
+            accuracies = df[(df['categorie'] == cat_index) & (df['model'] == model_index) & (df['aggregation'] == agg_index) & (df['region'] == region_index)]['accuracy']
+            all_client_models_name = df[(df['categorie'] == cat_index) & (df['model'] == model_index) & (df['aggregation'] == agg_index) & (df['region'] == region_index)]['filename']
+
+
+            for file in all_client_models_name:
+                file_path = file #os.path.join(clients_models, file)
+                if os.path.isfile(file_path):
                     if file_path.endswith('.keras'):
                         c_model = load_model(file_path)
                         all_client_models.append(c_model)
@@ -114,25 +141,7 @@ def receive_parameters():
                     elif file_path.endswith('.joblib'):
                         c_model = joblib.load(file_path)
                         all_client_models.append(c_model)
-                    
-        if model_file:
-            client_model_path = os.path.join(clients_models, client_id+'-'+model_filename)
-
-            model_file.save(client_model_path)
-
-            if os.path.exists('models_performances.csv'):
-                df = pd.read_csv('models_performances.csv')
-                accuracies = df['accuracy']
-            else:
-                df = pd.DataFrame(columns=['client','model','categorie','region','accuracy','error'])
-                accuracies.append(accuracy)
-
-            print(client_model_path)
-
-            new_record = {'client': client_id, 'categorie': cat, 'region': regions[region_index], 'model': all_models_name[model_index], 'accuracy': accuracy, 'error': error}
-            new_row_df = pd.DataFrame([new_record])
-            df = pd.concat([df, new_row_df], ignore_index=False)
-            df.to_csv('models_performances.csv', index=True)
+        
 
             if client_model_path.endswith('.joblib'):
                 client_model = joblib.load(client_model_path)
@@ -163,7 +172,7 @@ def receive_parameters():
                 global_model = client_model
 
             extension = os.path.splitext(client_model_path)[1]
-            global_model_path = os.path.join(source_models, 'global_model'+extension)
+            global_model_path = os.path.join(source_models, 'global_model' +extension)
 
             print('\n|>> Global model genereated successfully !\n')
             print(global_model_path)
@@ -195,35 +204,71 @@ def receive_parameters():
 
 
 def aggregate_models_fedavg(models,all_models,model_index):
-    # Initialize an empty MLPRegressor for aggregation
-    aggregated_model = all_models[model_index] #MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500) 
 
-    # Get the weights of all models and average them
-    weights = [model.coefs_ for model in models]
-    avg_weights = [np.mean(layer_weights, axis=0) for layer_weights in zip(*weights)]
-    aggregated_model.coefs_ = avg_weights
+    aggregated_model = all_models[model_index]
 
-    if hasattr(models[0], 'intercepts_'):
+    if model_index == '4':
+        #Weights
+        weights = [model.get_weights() for model in models]
+        avg_weights = [np.mean(np.array([weight[i] for weight in weights]), axis=0) 
+                       for i in range(len(weights[0]))]
+        #global model
+        aggregated_model.set_weights = avg_weights
+    elif model_index == '3':
+        #Weights
+        weights = [model.coefs_ for model in models]
+        avg_weights = [np.mean(layer_weights, axis=0) for layer_weights in zip(*weights)]
+        #Intercepts
         intercepts = [model.intercepts_ for model in models]
         avg_intercepts = [np.mean(layer_intercepts, axis=0) for layer_intercepts in zip(*intercepts)]
+        #global model
+        aggregated_model.coefs_ = avg_weights
         aggregated_model.intercepts_ = avg_intercepts
+    else:
+        #Weights
+        weights = [model.coef_ for model in models]
+        avg_weights = np.mean(weights, axis=0)
+        #Intercepts
+        intercepts = [model.intercept_ for model in models]
+        avg_intercepts = np.mean(intercepts, axis=0)
+        #global model
+        aggregated_model.coef_ = avg_weights
+        aggregated_model.intercepts_ = avg_intercepts
+
 
     return aggregated_model
 
 def aggregate_models_fedma(models,all_models,model_index):
-    # Initialize an empty MLPRegressor for aggregation
-    aggregated_model = all_models[model_index] #MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500)
 
-    # Get the weights of all models
-    weights = [model.coefs_ for model in models]
-    avg_weights = [np.mean(layer_weights, axis=0) for layer_weights in zip(*weights)]
-    aggregated_model.coefs_ = avg_weights
+    aggregated_model = all_models[model_index]
 
-    if hasattr(models[0], 'intercepts_'):
+    if model_index == '4':
+        #Weights
+        weights = [model.get_weights() for model in models]
+        avg_weights = [np.mean(np.array([weight[i] for weight in weights]), axis=0) 
+                       for i in range(len(weights[0]))]
+        #global model
+        aggregated_model.set_weights = avg_weights
+    elif model_index == '3':
+        #Weights
+        weights = [model.coefs_ for model in models]
+        avg_weights = [np.mean(layer_weights, axis=0) for layer_weights in zip(*weights)]
+        #Intercepts
         intercepts = [model.intercepts_ for model in models]
         avg_intercepts = [np.mean(layer_intercepts, axis=0) for layer_intercepts in zip(*intercepts)]
+        #global model
+        aggregated_model.coefs_ = avg_weights
         aggregated_model.intercepts_ = avg_intercepts
-
+    else:
+        #Weights
+        weights = [model.coef_ for model in models]
+        avg_weights = np.mean(weights, axis=0)
+        #Intercepts
+        intercepts = [model.intercept_ for model in models]
+        avg_intercepts = np.mean(intercepts, axis=0)
+        #global model
+        aggregated_model.coef_ = avg_weights
+        aggregated_model.intercepts_ = avg_intercepts
 
     return aggregated_model
 
@@ -236,13 +281,19 @@ def aggregate_models_bma(models,all_models,model_index, accuracies, top_n=3):
     top_indices = np.argsort(accuracies)[0:top_n]
     
     # Initialize an aggregated model (assuming the first model is a template)
-    aggregated_model = models[top_indices[0]].__class__()
+    aggregated_model = all_models[model_index]
     
     # Initialize weights for averaging
     total_weights = None
     
     for index in top_indices:
-        model_weights = models[index].get_weights()  # Get weights from each model
+        if model_index == '4':
+            model_weights = models[index].get_weights()  # Get weights from each model
+        elif model_index == '3':
+            model_weights = models[index].coefs_
+        else:
+            model_weights = models[index].coef_
+
         if total_weights is None:
             total_weights = np.zeros_like(model_weights)
         

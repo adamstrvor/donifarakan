@@ -1,5 +1,5 @@
-virtual/
-dist/
-build/
-donifarakan.egg-info/
+virtual/**
+dist/**
+build/**
+donifarakan.egg-info/**
 setup.py
