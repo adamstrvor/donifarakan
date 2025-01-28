@@ -1,1 +1,5 @@
 virtual/
+dist/
+build/
+donifarakan.egg-info/
+setup.py

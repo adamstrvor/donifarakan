@@ -8,7 +8,7 @@ with open('requirements.txt', 'r') as f:
 
 setup(
     name="donifarakan",
-    version="0.1.0",
+    version="0.1.1",
     author="Adama Seydou Traore",
     author_email="adamaseydoutraore86@gmail.com",
     description="Donifarakan is a federated learning framework designed specially for the finance sector (banks, fintech companies, etc.), where the stakeholders will train a generalized model on their local data without sharing them in order to make predictions, prevent market risks, assess news impacts on the stock market, and more.  ",
