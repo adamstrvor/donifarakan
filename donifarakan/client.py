@@ -21,15 +21,30 @@ import requests
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 from sklearn.preprocessing import LabelEncoder
+import re
 
 
 agg_methods = {'1':"Federated Averaging (FedAvg)", '2':"Federated Matched Averaging (FedMA)", '3':"All Model Averaging (AMA)", '4': "One Model Selection (OMS)", '5':"Best Models Averaging (BMA)", '6': "FedProx", '7': "Hybrid Approaches"}
 models = {'1': 'Linear Regression', '2': 'Logistic Regression', '3': 'Mutli-Layer Perceptron (MLP)', '4': 'Long-Short Term Memory (LSTM)'}
 all_models = { '1': LinearRegression(), '2': LogisticRegression(random_state=16) ,'3': MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500), '4': Sequential() }
-regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide'}
-cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Foreign Currency Exchange'}
+regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide', '7': 'Non-classified'}
+cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Other (You will specify the features later)' }
+markets = {'1': 'Technology Market', '2': 'Blue-Chip Market', '3': 'Emerging Markets', '4': 'Energy & Oil Market', '5': 'Financial Market (Banking and Insurance)', '6': 'Healthcare & Pharmaceutical Market', '7': 'Consumer Goods & Retail Market', '8':'Industrial & Manufacturing Market', '9':'Real Estate Market (REITs)', '10':'Telecommunications Market', '11':'Cryptocurrency & Blockchain Market'}
+markets_examples = {'1': 'NASDAQ (USA)', '2': 'Dow Jones Industrial Average (DJIA) (USA), FTSE 100 (UK)', '3':'Nifty 50 (India), Shanghai Stock Exchange (China), Bovespa (Brazil)', '4':'S&P Global Energy Index, NYSE Arca Oil Index (XOI)', '5':'S&P Financials Index, KBW Bank Index (BKX)', '6':'NYSE Healthcare Index, NASDAQ Biotechnology Index', '7':'S&P Consumer Discretionary Index, NYSE Retail Index', '8':'Dow Jones Transportation Index, S&P Industrials Index', '9':'S&P Real Estate Index, FTSE NAREIT Equity REITs Index', '10':'S&P Communications Index, NYSE Telecom Index', '11':'NASDAQ Crypto Index, Coinbase Stock (COIN), Bitcoin ETFs'}
+markets_details = {'1': 'Includes companies in software, hardware, semiconductors, cloud computing, AI, and cybersecurity.', '2': 'Composed of well-established, financially stable companies with a long track record.', '3': 'Includes stocks from developing countries with high growth potential.', '4': 'Focused on oil, gas, renewable energy, and utilities.', '5': 'Covers banking, asset management, fintech, and insurance companies.', '6': 'Includes biotech, pharmaceuticals, hospitals, and medical device companies.', '7': 'Includes luxury brands, fast-moving consumer goods (FMCG), and e-commerce.', '8':'Includes aerospace, defense, transportation, construction, and heavy machinery.', '9':'Composed of companies investing in real estate properties and development.', '10':'Covers internet providers, mobile network operators, and satellite communications.', '11':'Includes companies involved in crypto exchanges, blockchain technology, and DeFi.'}
+markets_companies = {'1': 'Apple (AAPL), Microsoft (MSFT), NVIDIA (NVDA), Google (GOOGL), Amazon (AMZN),...', '2': 'Coca-Cola (KO), Johnson & Johnson (JNJ), IBM, McDonald\'s (MCD), Procter & Gamble (PG),...', '3':'Reliance Industries (India), Alibaba (China), Vale (Brazil), Tata Motors (India),...', '4':'ExxonMobil (XOM), Chevron (CVX), BP, Shell, Saudi Aramco,...', '5':'JPMorgan Chase (JPM), Goldman Sachs (GS), Wells Fargo (WFC), Visa (V), PayPal (PYPL),...', '6':'Pfizer (PFE), Moderna (MRNA), Johnson & Johnson (JNJ), Merck (MRK), Roche (ROG),...', '7':'Walmart (WMT), Amazon (AMZN), Nike (NKE), Procter & Gamble (PG), Tesla (TSLA),...', '8':'Boeing (BA), Caterpillar (CAT), Lockheed Martin (LMT), General Electric (GE),...', '9':'Simon Property Group (SPG), Prologis (PLD), Public Storage (PSA),...', '10':'AT&T (T), Verizon (VZ), T-Mobile (TMUS), Vodafone (VOD),...', '11':'Coinbase (COIN), MicroStrategy (MSTR), Bitcoin ETFs (BITO, IBIT), Riot Blockchain (RIOT),...'}
 
-model_extension="joblib"
+model_extension=".joblib"
+
+#------------------------------------------
+def convert_quoted_numbers(value):
+    if isinstance(value, str):  # Check if the value is a string
+        value = value.replace('"', '').replace(',', '')  # Remove quotes and commas
+        try:
+            return float(value)  # Convert to float
+        except ValueError:
+            return value  # Handle conversion error
+    return value
 
 #------------------------------------------
 def send_model_to_server(server_url,model_filename,model_file,data,source_models_path):
@@ -55,6 +70,34 @@ def test():
         print("TEST OF THE GLOBAL MODEL")
         print("------------------------------------------")
 
+        print('|> Provide the full directory path that contains all the test datasets:')
+        print('\n\t|>> ',end="")
+        dataset_path = input("").strip()
+        dataset_path = dataset_path if dataset_path != "" else "/home/donifaranga/datasets"
+        print(colored(f"\t|>> {dataset_path}\n",'blue'))
+
+        print('|> Please specify the market categorie on which the dataset is based on:')
+        print('\n\t|>> ',end="")
+        print('--')
+        for index,name in markets.items():
+            print('\t',index,". "+name, f" ( {markets_details[index]}) ")
+            # print('\t\t> ',markets_details[index])
+            # print('\t\t> ',markets_companies[index])
+        print('\n\t|>> ',end="")
+        market_index = input("").strip()
+        market_index = market_index if market_index in markets.keys() else "1"
+        print(colored(f"\t|>> {markets[market_index]}\n", 'blue'))
+
+        print('|> Please specify the region on which the dataset is based on:')
+        print('\n\t|>> ',end="")
+        print('--')
+        for index,name in regions.items():
+            print('\t',index,". "+name)
+        print('\n\t|>> ',end="")
+        region_index = input("").strip()
+        region_index = region_index if region_index in regions.keys() else "1"
+        print(colored(f"\t|>> {regions[region_index]}\n", 'blue'))
+
         print('|> Please specify the categorie of the dataset to test the Global model:')
         print('\n\t|>> ',end="")
         print('--')
@@ -67,8 +110,8 @@ def test():
 
         cat = cats[cat_index]
 
-        source_stock_price = os.path.join(source_dataset, cats['1'].replace(" ", "-").lower())
-        source_dataset = os.path.join(source_dataset, cat.replace(" ", "-").lower())
+        source_stock_price = os.path.join(dataset_path,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(), cats['1'].replace(" ", "-").lower())
+        source_dataset = os.path.join(dataset_path,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(), cat.replace(" ", "-").lower())
 
         print('|> Select the model for training:')
         print('\n\t|>> ',end="")
@@ -80,13 +123,23 @@ def test():
         model_index = model_index if model_index in models.keys() else "2"
         print(colored(f"\t|>> {models[model_index]}\n", 'blue'))
 
+        print('|> Select the federated learning aggregate method:')
+        print('\n\t|>> ',end="")
+        print('--')
+        for index,name in agg_methods.items():
+            print('\t',index,". "+name)
+        print('\n\t|>> ',end="")
+        agg_index = input("").strip()
+        agg_index = agg_index if agg_index in agg_methods.keys() else "1"
+        print(colored(f"\t|>> {agg_methods[agg_index]}\n", 'blue'))
+
         print('|> Specify the full directory path where you want to save the trained model:')
         print('\n\t|>> ',end="")
         models_path = input("").strip()
         models_path = models_path if models_path != "" else "/home/donifaranga/models"
-        print(colored(f"\t|>>  {models_path}\n",'blue'))
+        print(colored(f"\t|>> {models_path}\n",'blue'))
 
-        source_models_path = os.path.join(models_path,cat.replace(" ", "-").lower(),models[model_index].replace(" ", "-").lower())
+        source_models_path = os.path.join(models_path,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cat.replace(" ", "-").lower(),models[model_index].replace(" ", "-").lower(),agg_methods[agg_index].replace(" ", "-").lower())
 
 
 
@@ -127,6 +180,11 @@ def test():
             features_columns = ['Open', 'High', 'Low', 'Volume']
             target_column = 'Close'
 
+            dataset = dataset.apply(lambda col: col.map(convert_quoted_numbers)) #dataset.applymap(convert_quoted_numbers)
+
+            X = dataset[features_columns] #.drop(columns=[target_column])
+            y = dataset[target_column]
+
             # dataset.drop_duplicates(inplace=True)
             # dataset = dataset[(dataset[['Open', 'Close', 'High', 'Low', 'Volume']] >= 0).all(axis=1)]
             # dataset['Adj Close'] = dataset['Close'] * adjustment_factor
@@ -134,6 +192,7 @@ def test():
         elif cat_index == '2':
             features_columns = ['News','Close']
             target_column = 'Direction_Binary' 
+
 
             dataset = dataset.groupby('Date')['News'].agg(lambda x: ' '.join(x)).reset_index()
             dataset = dataset.drop_duplicates(subset=['Date'], keep=False)
@@ -198,10 +257,11 @@ def test():
                 label_encoder = LabelEncoder()
                 dataset[target_column] = label_encoder.fit_transform(dataset[target_column])
 
+            X = dataset[features_columns] #.drop(columns=[target_column])
+            y = dataset[target_column]
+
 
         print(dataset)
-        X = dataset[features_columns] #.drop(columns=[target_column])
-        y = dataset[target_column]
         print(f"\n|> Dataset shape: {dataset.shape} ")
 
         # scaler = MinMaxScaler(feature_range=(0, 1))
@@ -217,7 +277,7 @@ def test():
         # REGRESSION
         # -----------------
         if model_index == '1':
-            print("\n|> Training on: [ Regression model ]")
+            print("\n|> Testing on: [ Regression model ]")
 
             model_path = os.path.join(source_models_path, 'global_model'+model_extension)
 
@@ -269,7 +329,7 @@ def test():
         # LOGISTIC REGRESSION
         # -----------------
         elif model_index == '2':
-            print("\n|> Training on: [ Logistic Regression model ]")
+            print("\n|> Testing on: [ Logistic Regression model ]")
 
             model_path = os.path.join(source_models_path, 'global_model'+model_extension)
 
@@ -321,7 +381,7 @@ def test():
         # MLP
         # -----------------
         elif model_index == '3':
-            print("\n|> Training: [ MLP model ]")
+            print("\n|> Testing: [ MLP model ]")
 
             model_path = os.path.join(source_models_path, 'global_model'+model_extension)
             
@@ -356,7 +416,7 @@ def test():
         # LSTM
         # -----------------
         elif model_index == '4':
-            print("\n|> Training: [ LSTM model ]")
+            print("\n|> Testing on: [ LSTM model ]")
 
             model_path = os.path.join(source_models_path, 'global_model.keras')
             
@@ -390,6 +450,7 @@ def test():
             error = mse_lstm
 
 
+        print()
         print(colored(f'\t|>> Predicted target values: [ Accuracy: {accuracy * 100:.2f}% ]', 'blue'))
         print(colored(f'\t|----------------------------\n', 'blue'))
         print(colored(y_pred,'green'))
@@ -411,26 +472,46 @@ def global_model():
         print('|> Before the traning please specify the central server full access url:')
         print('\n\t|>> ',end="")
         server_url = input("").strip().replace(' ', '')
-        server_url = server_url if server_url != "" else "http://localhost:5000/api/receive_model"
+        server_url = server_url if server_url != "" else "http://localhost:5000/api/get_model"
         print(colored(f"\t|>> {server_url}\n",'blue'))
 
         print('|> Specify the full path where you want to save the global model:')
         print('\n\t|>> ',end="")
         models_path = input("").strip()
         models_path = models_path if models_path != "" else "/home/donifaranga/models"
-        print(colored(f"\t|>>  {models_path}\n",'blue'))
+        print(colored(f"\t|>> {models_path}\n",'blue'))
 
-        print('|> Please specify the type or categorie of the global model to use (stock price data, feedback data,...):')
+        print('|> Please specify the market categorie on which the dataset is based on:')
+        print('\n\t|>> ',end="")
+        print('--')
+        for index,name in markets.items():
+            print('\t',index,". "+name, f" ( {markets_details[index]}) ")
+            # print('\t\t> ',markets_details[index])
+            # print('\t\t> ',markets_companies[index])
+        print('\n\t|>> ',end="")
+        market_index = input("").strip()
+        market_index = market_index if market_index in markets.keys() else "1"
+        print(colored(f"\t|>> {markets[market_index]}\n", 'blue'))
+
+        print('|> Please specify the region on which the dataset is based on:')
+        print('\n\t|>> ',end="")
+        print('--')
+        for index,name in regions.items():
+            print('\t',index,". "+name)
+        print('\n\t|>> ',end="")
+        region_index = input("").strip()
+        region_index = region_index if region_index in regions.keys() else "1"
+        print(colored(f"\t|>> {regions[region_index]}\n", 'blue'))
+
+        print('|> Please specify the type or categorie of the global model to use (stock price data, news data,...):')
         print('\n\t|>> ',end="")
         print('--')
         for index,name in cats.items():
             print('\t',index,". "+name)
         print('\n\t|>> ',end="")
         cat_index = input("").strip()
-        cat = cats[cat_index] if cat_index in cats.keys() else "General"
+        cat = cats[cat_index] if cat_index in cats.keys() else "1"
         print(colored(f"\t|>> {cat}\n", 'blue'))
-
-        source_models_path = os.path.join(models_path, cat.replace(" ", "-").lower())
 
         print('|> Select the model for training:')
         print('\n\t|>> ',end="")
@@ -442,13 +523,23 @@ def global_model():
         model_index = model_index if model_index in models.keys() else "2"
         print(colored(f"\t|>> {models[model_index]}\n", 'blue'))
 
-        source_models_path = os.path.join(source_dataset,models[model_index].replace(" ", "-").lower())
+        print('|> Select the federated learning aggregate method:')
+        print('\n\t|>> ',end="")
+        print('--')
+        for index,name in agg_methods.items():
+            print('\t',index,". "+name)
+        print('\n\t|>> ',end="")
+        agg_index = input("").strip()
+        agg_index = agg_index if agg_index in agg_methods.keys() else "1"
+        print(colored(f"\t|>> {agg_methods[agg_index]}\n", 'blue'))
 
+
+        source_models_path = os.path.join(models_path,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cat.replace(" ", "-").lower(),models[model_index].replace(" ", "-").lower(),agg_methods[agg_index].replace(" ", "-").lower())
 
         if not os.path.exists(source_models_path):
             os.makedirs(source_models_path)
 
-        data = {'cat': cat, 'model': model_index}
+        data = {'cat': cat_index, 'model_index': model_index, 'region_index': region_index, 'market_index': market_index, 'agg_index': agg_index}
         response = requests.post(server_url, data=data) #,stream=True)
 
         if response.status_code == 200 and response.headers.get('Content-Type') != 'application/json':
@@ -469,7 +560,7 @@ def global_model():
                     gl_model.write(chunck)
                 print(colored(f"\t|>> Global model downloaded successfully !\n", 'green'))
         else:
-            print(colored(f"|> Error occured during the process: {response.json()}",'red'))
+            print(colored(f"|> Error! occured during the process: {response.json()}",'red'))
 
     except Exception as e:
         print(colored(f"|> Error occured during the process: {e}",'red'))
@@ -502,23 +593,17 @@ def train():
     dataset_path = dataset_path if dataset_path != "" else "/home/donifaranga/datasets"
     print(colored(f"\t|>> {dataset_path}\n",'blue'))
 
-    if not os.path.exists(dataset_path):
-        os.makedirs(dataset_path)
-
-    print('|> Please specify the type or categorie of the dataset to use (stock price data, feedback data,...):')
+    print('|> Please specify the market categorie on which the dataset is based on:')
     print('\n\t|>> ',end="")
     print('--')
-    for index,name in cats.items():
+    for index,name in markets.items():
         print('\t',index,". "+name)
+        print('\t\t> ',markets_details[index])
+        print('\t\t> ',markets_companies[index])
     print('\n\t|>> ',end="")
-    cat_index = input("").strip()
-    cat = cats[cat_index] if cat_index in cats.keys() else "General"
-    print(colored(f"\t|>> {cat}\n", 'blue'))
-
-    source_dataset = os.path.join(dataset_path, cat.replace(" ", "-").lower())
-    source_stock_price = os.path.join(dataset_path, cats['1'].replace(" ", "-").lower())
-
-    model_extension = '.joblib'
+    market_index = input("").strip()
+    market_index = market_index if market_index in markets.keys() else "1"
+    print(colored(f"\t|>> {markets[market_index]}\n", 'blue'))
 
     print('|> Please specify the region on which the dataset is based on:')
     print('\n\t|>> ',end="")
@@ -527,9 +612,22 @@ def train():
         print('\t',index,". "+name)
     print('\n\t|>> ',end="")
     region_index = input("").strip()
-    region_index = region_index if region_index in regions.keys() else "2"
+    region_index = region_index if region_index in regions.keys() else "1"
     print(colored(f"\t|>> {regions[region_index]}\n", 'blue'))
 
+
+    print('|> Please specify the type or categorie of the dataset to use (stock price data, news data,...):')
+    print('\n\t|>> ',end="")
+    print('--')
+    for index,name in cats.items():
+        print('\t',index,". "+name)
+    print('\n\t|>> ',end="")
+    cat_index = input("").strip()
+    cat = cats[cat_index] if cat_index in cats.keys() else "1"
+    print(colored(f"\t|>> {cat}\n", 'blue'))
+
+    source_dataset = os.path.join(dataset_path,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cat.replace(" ", "-").lower())
+    source_stock_price = os.path.join(dataset_path,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cats['1'].replace(" ", "-").lower())
 
     if not os.path.exists(source_dataset):
         os.makedirs(source_dataset)
@@ -560,7 +658,7 @@ def train():
     models_path = models_path if models_path != "" else "/home/donifaranga/models"
     print(colored(f"\t|>> {models_path}\n",'blue'))
 
-    source_models_path = os.path.join(models_path,cat.replace(" ", "-").lower(),models[model_index].replace(" ", "-").lower())
+    source_models_path = os.path.join(models_path,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cat.replace(" ", "-").lower(),models[model_index].replace(" ", "-").lower(),agg_methods[agg_index].replace(" ", "-").lower())
 
     if not os.path.exists(source_models_path):
         os.makedirs(source_models_path)
@@ -594,6 +692,8 @@ def train():
         if cat_index == '1':
             features_columns = ['Open', 'High', 'Low', 'Volume']
             target_column = 'Close'
+
+            dataset = dataset.apply(lambda col: col.map(convert_quoted_numbers)) #dataset.applymap(convert_quoted_numbers)
 
             X = dataset[features_columns] #.drop(columns=[target_column])
             y = dataset[target_column]
@@ -707,6 +807,7 @@ def train():
                     regressor = None
             else:
                 regressor = all_models[model_index] #LinearRegression()
+            
             regressor.fit(X_train, y_train)
 
             y_pred = regressor.predict(X_test)
@@ -723,7 +824,7 @@ def train():
 
             filename = os.path.basename(lr_model_filename)
 
-            data = {'cat': cat_index, 'id': client_id, 'filename': filename,'agg':agg_index,'model_type':model_index, 'region_index': region_index, 'accuracy':accuracy, 'error': error}
+            data = {'cat': cat_index, 'id': client_id, 'filename': filename,'agg':agg_index,'model_type':model_index, 'region_index': region_index, 'accuracy':accuracy, 'error': error,'market_index': market_index}
 
             if lr_model_filename.endswith('.pkl'):
                 with open(lr_model_filename, 'wb') as file:
@@ -792,7 +893,7 @@ def train():
 
             filename = os.path.basename(lr_model_filename)
 
-            data = {'cat': cat_index, 'id': client_id, 'filename': filename,'agg':agg_index,'model_type':model_index, 'region_index': region_index, 'accuracy':accuracy, 'error': error}
+            data = {'cat': cat_index, 'id': client_id, 'filename': filename,'agg':agg_index,'model_type':model_index, 'region_index': region_index, 'accuracy':accuracy, 'error': error, 'market_index': market_index}
 
             if lr_model_filename.endswith('.pkl'):
                 with open(lr_model_filename, 'wb') as file:
@@ -922,7 +1023,7 @@ def train():
 
             filename = lstm_model_filename
 
-            data = {'cat': cat_index, 'id': client_id, 'filename': filename,'agg':agg_index,'model_type':model_index, 'region_index': region_index,'accuracy':accuracy, 'error': error}
+            data = {'cat': cat_index, 'id': client_id, 'filename': filename,'agg':agg_index,'model_type':model_index, 'region_index': region_index,'accuracy':accuracy, 'error': error,'market_index': market_index}
 
 
             send_model_to_server(server_url,lstm_model_filename,mlp,data,source_models_path)

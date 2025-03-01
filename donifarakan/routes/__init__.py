@@ -18,6 +18,7 @@ from tensorflow.keras.models import load_model
 import joblib
 import pickle
 import requests
+import re
 
 
 #------------------------------------------
@@ -41,20 +42,42 @@ def get_model():
         source_dataset = os.path.join(source_dir,'datasets')
         source_models = os.path.join(source_dir,'models')
 
-        cat = request.form.get('cat')
+        agg_methods = {'1':"Federated Averaging (FedAvg)", '2':"Federated Matched Averaging (FedMA)", '3':"All Model Averaging (AMA)", '4': "One Model Selection (OMS)", '5':"Best Models Averaging (BMA)", '6': "FedProx", '7': "Hybrid Approaches"}
+        all_models_name = {'1': 'Linear Regression', '2': 'Logistic Regression', '3': 'Mutli-Layer Perceptron (MLP)', '4': 'Long-Short Term Memory (LSTM)'}
+        all_models = { '1': LinearRegression(), '2': LogisticRegression(random_state=16) ,'3': MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500), '4': Sequential() }
+        regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide', '7': 'Non-classified'}
+        cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Other (You will specify the features later)' }
+        markets = {'1': 'Technology Market', '2': 'Blue-Chip Market', '3': 'Emerging Markets', '4': 'Energy & Oil Market', '5': 'Financial Market (Banking and Insurance)', '6': 'Healthcare & Pharmaceutical Market', '7': 'Consumer Goods & Retail Market', '8':'Industrial & Manufacturing Market', '9':'Real Estate Market (REITs)', '10':'Telecommunications Market', '11':'Cryptocurrency & Blockchain Market'}
+        markets_examples = {'1': 'NASDAQ (USA)', '2': 'Dow Jones Industrial Average (DJIA) (USA), FTSE 100 (UK)', '3':'Nifty 50 (India), Shanghai Stock Exchange (China), Bovespa (Brazil)', '4':'S&P Global Energy Index, NYSE Arca Oil Index (XOI)', '5':'S&P Financials Index, KBW Bank Index (BKX)', '6':'NYSE Healthcare Index, NASDAQ Biotechnology Index', '7':'S&P Consumer Discretionary Index, NYSE Retail Index', '8':'Dow Jones Transportation Index, S&P Industrials Index', '9':'S&P Real Estate Index, FTSE NAREIT Equity REITs Index', '10':'S&P Communications Index, NYSE Telecom Index', '11':'NASDAQ Crypto Index, Coinbase Stock (COIN), Bitcoin ETFs'}
+        markets_details = {'1': 'Includes companies in software, hardware, semiconductors, cloud computing, AI, and cybersecurity.', '2': 'Composed of well-established, financially stable companies with a long track record.', '3': 'Includes stocks from developing countries with high growth potential.', '4': 'Focused on oil, gas, renewable energy, and utilities.', '5': 'Covers banking, asset management, fintech, and insurance companies.', '6': 'Includes biotech, pharmaceuticals, hospitals, and medical device companies.', '7': 'Includes luxury brands, fast-moving consumer goods (FMCG), and e-commerce.', '8':'Includes aerospace, defense, transportation, construction, and heavy machinery.', '9':'Composed of companies investing in real estate properties and development.', '10':'Covers internet providers, mobile network operators, and satellite communications.', '11':'Includes companies involved in crypto exchanges, blockchain technology, and DeFi.'}
+        markets_companies =  {'1': 'Apple (AAPL), Microsoft (MSFT), NVIDIA (NVDA), Google (GOOGL), Amazon (AMZN),...', '2': 'Coca-Cola (KO), Johnson & Johnson (JNJ), IBM, McDonald\'s (MCD), Procter & Gamble (PG),...', '3':'Reliance Industries (India), Alibaba (China), Vale (Brazil), Tata Motors (India),...', '4':'ExxonMobil (XOM), Chevron (CVX), BP, Shell, Saudi Aramco,...', '5':'JPMorgan Chase (JPM), Goldman Sachs (GS), Wells Fargo (WFC), Visa (V), PayPal (PYPL),...', '6':'Pfizer (PFE), Moderna (MRNA), Johnson & Johnson (JNJ), Merck (MRK), Roche (ROG),...', '7':'Walmart (WMT), Amazon (AMZN), Nike (NKE), Procter & Gamble (PG), Tesla (TSLA).', '8':'Boeing (BA), Caterpillar (CAT), Lockheed Martin (LMT), General Electric (GE),...', '9':'Simon Property Group (SPG), Prologis (PLD), Public Storage (PSA),...', '10':'AT&T (T), Verizon (VZ), T-Mobile (TMUS), Vodafone (VOD),...', '11':'Coinbase (COIN), MicroStrategy (MSTR), Bitcoin ETFs (BITO, IBIT), Riot Blockchain (RIOT),...'}
 
-        source_models = os.path.join(source_models, cat.replace(" ", "-").lower())
-        # print(source_models,'\n')
+        cat_index = request.form.get('cat')
+        region_index = request.form.get('region_index')
+        agg_index = request.form.get('agg_index')
+        model_index = request.form.get('model_index')
+        market_index = request.form.get('market_index')
+
+        source_models = os.path.join(source_models,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cats[cat_index].replace(" ", "-").lower(),all_models_name[model_index].replace(" ", "-").lower(),agg_methods[agg_index].replace(" ", "-").lower())
+        print(source_models,'\n')
 
         if not os.path.exists(source_models):
             os.makedirs(source_models)
 
-        if os.path.exists(os.path.join(source_models, 'global_model.joblib')):
-            return send_file(os.path.join(source_models, 'global_model.joblib'),as_attachment=True)
-        elif os.path.exists(os.path.join(source_models, 'global_model.pkl')):
-            return send_file(os.path.join(source_models, 'global_model.pkl'),as_attachment=True)
-        elif os.path.exists(os.path.join(source_models, 'global_model.keras')) :
-            return send_file(os.path.join(source_models, 'global_model.keras'),as_attachment=True)
+
+        model_name1 = os.path.join(source_models, 'global_model.joblib')
+        model_name2 = os.path.join(source_models, 'global_model.pkl')
+        model_name3 = os.path.join(source_models, 'global_model.keras')
+
+        if os.path.exists(model_name1):
+            print("Global model found!")
+            return send_file(model_name1,as_attachment=True)
+        elif os.path.exists(model_name2):
+            print("Global model found!")
+            return send_file(model_name2,as_attachment=True)
+        elif os.path.exists(model_name3) :
+            print("Global model found!")
+            return send_file(model_name3,as_attachment=True)
         else:
             return jsonify({"error": "No global model file found"}), 404
 
@@ -74,13 +97,18 @@ def receive_parameters():
         agg_methods = {'1':"Federated Averaging (FedAvg)", '2':"Federated Matched Averaging (FedMA)", '3':"All Model Averaging (AMA)", '4': "One Model Selection (OMS)", '5':"Best Models Averaging (BMA)", '6': "FedProx", '7': "Hybrid Approaches"}
         all_models_name = {'1': 'Linear Regression', '2': 'Logistic Regression', '3': 'Mutli-Layer Perceptron (MLP)', '4': 'Long-Short Term Memory (LSTM)'}
         all_models = { '1': LinearRegression(), '2': LogisticRegression(random_state=16) ,'3': MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500), '4': Sequential() }
-        regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide'}
-        cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Foreign Currency Exchange'}
+        regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide', '7': 'Non-classified'}
+        cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Other (You will specify the features later)' }
+        markets = {'1': 'Technology Market', '2': 'Blue-Chip Market', '3': 'Emerging Markets', '4': 'Energy & Oil Market', '5': 'Financial Market (Banking and Insurance)', '6': 'Healthcare & Pharmaceutical Market', '7': 'Consumer Goods & Retail Market', '8':'Industrial & Manufacturing Market', '9':'Real Estate Market (REITs)', '10':'Telecommunications Market', '11':'Cryptocurrency & Blockchain Market'}
+        markets_examples = {'1': 'NASDAQ (USA)', '2': 'Dow Jones Industrial Average (DJIA) (USA), FTSE 100 (UK)', '3':'Nifty 50 (India), Shanghai Stock Exchange (China), Bovespa (Brazil)', '4':'S&P Global Energy Index, NYSE Arca Oil Index (XOI)', '5':'S&P Financials Index, KBW Bank Index (BKX)', '6':'NYSE Healthcare Index, NASDAQ Biotechnology Index', '7':'S&P Consumer Discretionary Index, NYSE Retail Index', '8':'Dow Jones Transportation Index, S&P Industrials Index', '9':'S&P Real Estate Index, FTSE NAREIT Equity REITs Index', '10':'S&P Communications Index, NYSE Telecom Index', '11':'NASDAQ Crypto Index, Coinbase Stock (COIN), Bitcoin ETFs'}
+        markets_details = {'1': 'Includes companies in software, hardware, semiconductors, cloud computing, AI, and cybersecurity.', '2': 'Composed of well-established, financially stable companies with a long track record.', '3': 'Includes stocks from developing countries with high growth potential.', '4': 'Focused on oil, gas, renewable energy, and utilities.', '5': 'Covers banking, asset management, fintech, and insurance companies.', '6': 'Includes biotech, pharmaceuticals, hospitals, and medical device companies.', '7': 'Includes luxury brands, fast-moving consumer goods (FMCG), and e-commerce.', '8':'Includes aerospace, defense, transportation, construction, and heavy machinery.', '9':'Composed of companies investing in real estate properties and development.', '10':'Covers internet providers, mobile network operators, and satellite communications.', '11':'Includes companies involved in crypto exchanges, blockchain technology, and DeFi.'}
+        markets_companies =  {'1': 'Apple (AAPL), Microsoft (MSFT), NVIDIA (NVDA), Google (GOOGL), Amazon (AMZN),...', '2': 'Coca-Cola (KO), Johnson & Johnson (JNJ), IBM, McDonald\'s (MCD), Procter & Gamble (PG),...', '3':'Reliance Industries (India), Alibaba (China), Vale (Brazil), Tata Motors (India),...', '4':'ExxonMobil (XOM), Chevron (CVX), BP, Shell, Saudi Aramco,...', '5':'JPMorgan Chase (JPM), Goldman Sachs (GS), Wells Fargo (WFC), Visa (V), PayPal (PYPL),...', '6':'Pfizer (PFE), Moderna (MRNA), Johnson & Johnson (JNJ), Merck (MRK), Roche (ROG),...', '7':'Walmart (WMT), Amazon (AMZN), Nike (NKE), Procter & Gamble (PG), Tesla (TSLA).', '8':'Boeing (BA), Caterpillar (CAT), Lockheed Martin (LMT), General Electric (GE),...', '9':'Simon Property Group (SPG), Prologis (PLD), Public Storage (PSA),...', '10':'AT&T (T), Verizon (VZ), T-Mobile (TMUS), Vodafone (VOD),...', '11':'Coinbase (COIN), MicroStrategy (MSTR), Bitcoin ETFs (BITO, IBIT), Riot Blockchain (RIOT),...'}
 
         model_file = request.files.get('model')
         agg_index = request.form.get('agg')
         model_index = request.form.get('model_type')
         cat_index = request.form.get('cat')
+        market_index = request.form.get('market_index')
         cat = cats[cat_index]
         client_id = request.form.get('id')
         model_filename = request.form.get('filename')
@@ -89,9 +117,9 @@ def receive_parameters():
         error = request.form.get('error')
 
         # print(source_models,'\n')
-        source_models = os.path.join(source_models,cat.replace(" ", "-").lower(),all_models_name[model_index].replace(" ","-").lower())
+        source_models = os.path.join(source_models,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cat.replace(" ", "-").lower(),all_models_name[model_index].replace(" ","-").lower(),agg_methods[agg_index].replace(" ", "-").lower())
         # print(source_models,'\n')
-        clients_models = os.path.join(clients_models,cat.replace(" ", "-").lower(),all_models_name[model_index].replace(" ","-").lower())
+        clients_models = os.path.join(clients_models,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cat.replace(" ", "-").lower(),all_models_name[model_index].replace(" ","-").lower(),agg_methods[agg_index].replace(" ", "-").lower())
         # print(clients_models,'\n')
 
         if not os.path.exists(source_models):
@@ -110,8 +138,8 @@ def receive_parameters():
             model_file.save(client_model_path)
             print(client_model_path)
 
-            performance_columns = ['client','model','categorie','aggregation','region','accuracy','error','filename']
-            new_record = {'client': client_id, 'model': model_index, 'categorie': cat_index, 'aggregation': agg_index, 'region': region_index, 'accuracy': accuracy, 'error': error, 'filename': client_model_path}
+            performance_columns = ['client','model','categorie','aggregation','region','market','accuracy','error','filename']
+            new_record = {'client': client_id, 'model': model_index, 'categorie': cat_index, 'aggregation': agg_index, 'region': region_index,'market': market_index , 'accuracy': accuracy, 'error': error, 'filename': client_model_path}
             new_row_df = pd.DataFrame([new_record],columns=performance_columns)
 
             if os.path.exists('models_performances.csv'):
@@ -124,8 +152,9 @@ def receive_parameters():
             df.to_csv('models_performances.csv', index=False)
 
             df = pd.read_csv('models_performances.csv')
-            accuracies = df[(df['categorie'] == cat_index) & (df['model'] == model_index) & (df['aggregation'] == agg_index) & (df['region'] == region_index)]['accuracy']
-            all_client_models_name = df[(df['categorie'] == cat_index) & (df['model'] == model_index) & (df['aggregation'] == agg_index) & (df['region'] == region_index)]['filename']
+            accuracies = df[(df['categorie'] == cat_index) & (df['model'] == model_index) & (df['aggregation'] == agg_index) & (df['region'] == region_index) & (df['market'] == market_index)]['accuracy']
+            all_client_models_name = df[(df['categorie'] == cat_index) & (df['model'] == model_index) & (df['aggregation'] == agg_index) & (df['region'] == region_index) & (df['market'] == market_index)]['filename']
+            print(all_client_models_name)
 
 
             for file in all_client_models_name:

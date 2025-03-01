@@ -26,8 +26,12 @@ from nltk.tokenize import word_tokenize
 agg_methods = {'1':"Federated Averaging (FedAvg)", '2':"Federated Matched Averaging (FedMA)", '3':"All Model Averaging (AMA)", '4': "One Model Selection (OMS)", '5':"Best Models Averaging (BMA)", '6': "FedProx", '7': "Hybrid Approaches"}
 models = {'1': 'Linear Regression', '2': 'Logistic Regression', '3': 'Mutli-Layer Perceptron (MLP)', '4': 'Long-Short Term Memory (LSTM)'}
 all_models = { '1': LinearRegression(), '2': LogisticRegression(random_state=16) ,'3': MLPRegressor(hidden_layer_sizes=(100, 100), max_iter=500), '4': Sequential() }
-regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide'}
-cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Foreign Currency Exchange'}
+regions = {'1': 'Africa', '2': 'America', '3': 'Middle east', '4': 'Europe', '5': 'Asia', '6': 'World Wide', '7': 'Non-classified'}
+cats = {'1': 'Stock Prices', '2': 'News Sentiment', '3': 'Other (You will specify the features later)' }
+markets = {'1': 'Technology Market', '2': 'Blue-Chip Market', '3': 'Emerging Markets', '4': 'Energy & Oil Market', '5': 'Financial Market (Banking and Insurance)', '6': 'Healthcare & Pharmaceutical Market', '7': 'Consumer Goods & Retail Market', '8':'Industrial & Manufacturing Market', '9':'Real Estate Market (REITs)', '10':'Telecommunications Market', '11':'Cryptocurrency & Blockchain Market'}
+markets_examples = {'1': 'NASDAQ (USA)', '2': 'Dow Jones Industrial Average (DJIA) (USA), FTSE 100 (UK)', '3':'Nifty 50 (India), Shanghai Stock Exchange (China), Bovespa (Brazil)', '4':'S&P Global Energy Index, NYSE Arca Oil Index (XOI)', '5':'S&P Financials Index, KBW Bank Index (BKX)', '6':'NYSE Healthcare Index, NASDAQ Biotechnology Index', '7':'S&P Consumer Discretionary Index, NYSE Retail Index', '8':'Dow Jones Transportation Index, S&P Industrials Index', '9':'S&P Real Estate Index, FTSE NAREIT Equity REITs Index', '10':'S&P Communications Index, NYSE Telecom Index', '11':'NASDAQ Crypto Index, Coinbase Stock (COIN), Bitcoin ETFs'}
+markets_details = {'1': 'Includes companies in software, hardware, semiconductors, cloud computing, AI, and cybersecurity.', '2': 'Composed of well-established, financially stable companies with a long track record.', '3': 'Includes stocks from developing countries with high growth potential.', '4': 'Focused on oil, gas, renewable energy, and utilities.', '5': 'Covers banking, asset management, fintech, and insurance companies.', '6': 'Includes biotech, pharmaceuticals, hospitals, and medical device companies.', '7': 'Includes luxury brands, fast-moving consumer goods (FMCG), and e-commerce.', '8':'Includes aerospace, defense, transportation, construction, and heavy machinery.', '9':'Composed of companies investing in real estate properties and development.', '10':'Covers internet providers, mobile network operators, and satellite communications.', '11':'Includes companies involved in crypto exchanges, blockchain technology, and DeFi.'}
+markets_companies = {'1': 'Apple (AAPL), Microsoft (MSFT), NVIDIA (NVDA), Google (GOOGL), Amazon (AMZN),...', '2': 'Coca-Cola (KO), Johnson & Johnson (JNJ), IBM, McDonald\'s (MCD), Procter & Gamble (PG),...', '3':'Reliance Industries (India), Alibaba (China), Vale (Brazil), Tata Motors (India),...', '4':'ExxonMobil (XOM), Chevron (CVX), BP, Shell, Saudi Aramco,...', '5':'JPMorgan Chase (JPM), Goldman Sachs (GS), Wells Fargo (WFC), Visa (V), PayPal (PYPL),...', '6':'Pfizer (PFE), Moderna (MRNA), Johnson & Johnson (JNJ), Merck (MRK), Roche (ROG),...', '7':'Walmart (WMT), Amazon (AMZN), Nike (NKE), Procter & Gamble (PG), Tesla (TSLA).', '8':'Boeing (BA), Caterpillar (CAT), Lockheed Martin (LMT), General Electric (GE),...', '9':'Simon Property Group (SPG), Prologis (PLD), Public Storage (PSA),...', '10':'AT&T (T), Verizon (VZ), T-Mobile (TMUS), Vodafone (VOD),...', '11':'Coinbase (COIN), MicroStrategy (MSTR), Bitcoin ETFs (BITO, IBIT), Riot Blockchain (RIOT),...'}
 
 # nltk.download('stopwords')
 
@@ -61,7 +65,9 @@ def download_dataset(default_path="/home/donifaranga/datasets"):
     print(" GET YOUR DATASET")
     print("--------------------------------------")
 
-    print('|> Please select the repository:')
+    print('|> Please select the repository:\n')
+    print('\n\t|>> ',end="")
+    print('--')
     for index,name in sites.items():
         print('\t',index,". "+name)
 
@@ -82,6 +88,28 @@ def download_dataset(default_path="/home/donifaranga/datasets"):
     dataset_path = dataset_path if dataset_path != "" else default_path
     print(colored(f"\t|>>  {dataset_path}\n",'blue'))
 
+    print('|> Please specify the market categorie on which the dataset is based on:')
+    print('\n\t|>> ',end="")
+    print('--')
+    for index,name in markets.items():
+        print('\t',index,". "+name)
+        print('\t\t> ',markets_details[index])
+        # print('\t\t> ',markets_companies[index])
+    print('\n\t|>> ',end="")
+    market_index = input("").strip()
+    market_index = market_index if market_index in markets.keys() else "1"
+    print(colored(f"\t|>> {markets[market_index]}\n", 'blue'))
+
+    print('|> Please specify the region on which the dataset is based on:')
+    print('\n\t|>> ',end="")
+    print('--')
+    for index,name in regions.items():
+        print('\t',index,". "+name)
+    print('\n\t|>> ',end="")
+    region_index = input("").strip()
+    region_index = region_index if region_index in regions.keys() else "1"
+    print(colored(f"\t|>> {regions[region_index]}\n", 'blue'))
+
     print('|> Specify the type or categorie of the dataset (stock price data, feedback data,...):')
     print('\n\t|>> ',end="")
     print('--')
@@ -92,7 +120,7 @@ def download_dataset(default_path="/home/donifaranga/datasets"):
     cat = cats[cat_index] if cat_index in cats.keys() else "General"
     print(colored(f"\t|>> {cat}\n", 'blue'))
 
-    source_dataset = os.path.join(dataset_path,cat.replace(" ", "-").lower())
+    source_dataset = os.path.join(dataset_path,markets[market_index].replace(" ", "-").lower(),regions[region_index].replace(" ", "-").lower(),cat.replace(" ", "-").lower())
 
     if not os.path.exists(source_dataset):
         os.makedirs(source_dataset)
@@ -128,6 +156,16 @@ def show_performances():
     print(" FL-FRAMEWORK MODELS PERFORMANCES")
     print("-------------------------------------------------------------")
 
+    print('|> Please specify the region on which the dataset is based on:')
+    print('\n\t|>> ',end="")
+    print('--')
+    for index,name in regions.items():
+        print('\t',index,". "+name)
+    print('\n\t|>> ',end="")
+    region_index = input("").strip()
+    region_index = region_index if region_index in regions.keys() else "1"
+    print(colored(f"\t|>> {regions[region_index]}\n", 'blue'))
+
 
     print('|> Please specify the type or categorie of the dataset to use (stock price data, feedback data,...):')
     print('\n\t|>> ',end="")
@@ -139,16 +177,6 @@ def show_performances():
     cat_index = cat_index if cat_index in cats.keys() else "1"
     print(colored(f"\t|>> {cats[cat_index]}\n", 'blue'))
 
-
-    print('|> Please specify the region on which the dataset is based on:')
-    print('\n\t|>> ',end="")
-    print('--')
-    for index,name in regions.items():
-        print('\t',index,". "+name)
-    print('\n\t|>> ',end="")
-    region_index = input("").strip()
-    region_index = region_index if region_index in regions.keys() else "1"
-    print(colored(f"\t|>> {regions[region_index]}\n", 'blue'))
 
     print('|> Select the model for training:')
     print('\n\t|>> ',end="")
